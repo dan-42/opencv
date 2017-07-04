@@ -580,6 +580,18 @@ enum { CAP_PROP_IMAGES_BASE = 18000,
 
 class IVideoCapture;
 
+struct CaptureDevice
+{
+	int		index{ -1 };
+	int		captureApi{ -1 };
+	String  name{};
+	String  description{};
+	String  devicePath{};
+};
+
+using CaptureDevices = std::vector<CaptureDevice>;
+
+
 /** @brief Class for video capturing from video files, image sequences or cameras.
 
 The class provides C++ API for capturing video from cameras or for reading video files and image sequences.
@@ -600,7 +612,10 @@ Here is how the class can be used:
  */
 class CV_EXPORTS_W VideoCapture
 {
-public:
+public:	
+
+	static CaptureDevices captureDevices();
+
     /** @brief Default constructor
     @note In @ref videoio_c "C API", when you finished working with video, release CvCapture structure with
     cvReleaseCapture(), or use Ptr\<CvCapture\> that calls cvReleaseCapture() automatically in the

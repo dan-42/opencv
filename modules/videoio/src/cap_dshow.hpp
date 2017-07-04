@@ -23,6 +23,9 @@ namespace cv
 class VideoCapture_DShow : public IVideoCapture
 {
 public:
+	
+	static void captureDevices(CaptureDevices& devices);
+
     VideoCapture_DShow(int index);
     virtual ~VideoCapture_DShow();
 

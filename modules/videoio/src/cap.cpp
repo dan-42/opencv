@@ -585,6 +585,25 @@ static Ptr<IVideoWriter> IVideoWriter_create(const String& filename, int apiPref
     return iwriter;
 }
 
+CaptureDevices VideoCapture::captureDevices() {
+	CV_TRACE_FUNCTION();
+	CaptureDevices devices{};
+
+#ifdef HAVE_DSHOW      
+	VideoCapture_DShow::captureDevices(devices);	
+#endif
+#ifdef HAVE_INTELPERC
+	//todo
+#endif
+#ifdef WINRT_VIDEO
+	//todo
+#endif
+#ifdef HAVE_GPHOTO2
+	//todo
+#endif
+	return devices;
+}
+
 VideoCapture::VideoCapture()
 {}
 

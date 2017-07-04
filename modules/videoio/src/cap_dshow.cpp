@@ -3174,6 +3174,23 @@ namespace cv
 {
 videoInput VideoCapture_DShow::g_VI;
 
+
+void VideoCapture_DShow::captureDevices(CaptureDevices& devices)
+{
+	CoInitialize(0);
+	int count = g_VI.listDevices(true);
+
+	for (int idx = 0; idx < count; ++idx)
+	{
+		CaptureDevice device{};
+		device.captureApi = CAP_DSHOW;
+		device.name = String{ g_VI.getDeviceName(idx) };
+		device.index = idx;
+		devices.push_back(std::move(device));
+	}
+	CoUninitialize();
+}
+
 VideoCapture_DShow::VideoCapture_DShow(int index)
     : m_index(-1)
     , m_width(-1)
