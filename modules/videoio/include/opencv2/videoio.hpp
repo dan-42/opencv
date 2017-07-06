@@ -580,15 +580,49 @@ enum { CAP_PROP_IMAGES_BASE = 18000,
 
 class IVideoCapture;
 
+/**	@brief struct for meta information about connected video capture devices
+
+	The class provides minimal basic information about the connected devices
+*/
 struct CaptureDevice
 {
+	/** @brief unqie index for opening VideoCapture
+
+	value -1 indicating unknow index. 
+	The index in offsettet by the captureApi value. Index and device order can change on any software 
+	restart, system reboot or even on plug in and plug out of devices
+	*/
 	int		index{ -1 };
+
+	/** @brief captureApi is the offset if the used capture api. 
+
+	For Example for directshow the captureApi equals cv::CAP_PROP_DSHOW (700)
+	*/
 	int		captureApi{ -1 };
+
+	/** @brief name of the device, meaning and content might change depending on underlying capturr Api
+
+	@note for devices from directshow name is the USB-device name	
+	*/
 	String  name{};
+
+	/** @brief description of the device, meaning and content might change depending on underlying capturr Api
+
+	@note for devices from directshow description is the USB-device description
+	*/
 	String  description{};
+
+	/** @brief device path a system wide unique path in all lower-case, format and naming depending on capture Api
+
+	for a linux system it might be something like /dev/video0
+	*/
 	String  devicePath{};
 };
 
+/** @brief type CaptureDevices provides a std::vector<CaptureDevice>;
+
+to be used as return type in functions
+*/
 using CaptureDevices = std::vector<CaptureDevice>;
 
 
@@ -614,7 +648,11 @@ class CV_EXPORTS_W VideoCapture
 {
 public:	
 
-	static CaptureDevices captureDevices();
+	/** @brief captureDevices static member function, grabbing all connecting captureDevices
+
+	@note the meaning of names and devicePath description differ depending on the captureApi
+	*/
+	static CaptureDevices captureDevices();	
 
     /** @brief Default constructor
     @note In @ref videoio_c "C API", when you finished working with video, release CvCapture structure with

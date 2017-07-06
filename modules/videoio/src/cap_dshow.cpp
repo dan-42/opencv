@@ -272,6 +272,25 @@ interface ISampleGrabber : public IUnknown
 #define HEADER(p) (&(((VIDEOINFOHEADER*)(p))->bmiHeader))
 #endif
 
+/**
+	ConvertBSTRToMBS
+	\param bstr
+	\return
+*/
+inline cv::String convertBstrToStr(BSTR bstr)
+{
+	size_t maxLen = 255 -2;
+	cv::String str;
+	size_t count = 0;
+	while (bstr[count] != 0x00 && count < maxLen) {
+		str += (char)bstr[count];
+		count++;
+	}
+	str += '\0';
+	return str;
+}
+
+
 //Example Usage
 /*
     //create a videoInput object
@@ -496,6 +515,9 @@ class videoInput{
         //needs to be called after listDevices - otherwise returns NULL
         static char * getDeviceName(int deviceID);
 
+		//needs to be called after listDevices - otherwise returns NULL
+		static cv::CaptureDevices getDevices();
+
         //choose to use callback based capture - or single threaded
         void setUseCallback(bool useCallback);
 
@@ -619,7 +641,7 @@ class videoInput{
         static void __cdecl basicThread(void * objPtr);
 
         static char deviceNames[VI_MAX_CAMERAS][255];
-
+		static cv::CaptureDevices devices;
 };
 
 ///////////////////////////  HANDY FUNCTIONS  /////////////////////////////
@@ -1314,6 +1336,8 @@ bool videoInput::setFormat(int deviceNumber, int format){
 // Must call listDevices first.
 //
 // ----------------------------------------------------------------------
+cv::CaptureDevices videoInput::devices = {  };
+
 char videoInput::deviceNames[VI_MAX_CAMERAS][255]={{0}};
 
 char * videoInput::getDeviceName(int deviceID){
@@ -1323,6 +1347,14 @@ char * videoInput::getDeviceName(int deviceID){
     return deviceNames[deviceID];
 }
 
+// ----------------------------------------------------------------------
+// Our static function for returning all connected devices as cv::CaptureDevices
+//
+// ----------------------------------------------------------------------
+cv::CaptureDevices videoInput::getDevices()
+{
+	return videoInput::devices;
+}
 
 // ----------------------------------------------------------------------
 // Our static function for finding num devices available etc
@@ -1345,7 +1377,7 @@ int videoInput::listDevices(bool silent){
         CLSCTX_INPROC_SERVER, IID_ICreateDevEnum,
         reinterpret_cast<void**>(&pDevEnum));
 
-
+	
     if (SUCCEEDED(hr))
     {
         // Create an enumerator for the video capture category.
@@ -1355,6 +1387,7 @@ int videoInput::listDevices(bool silent){
 
        if(hr == S_OK){
 
+			devices.clear();
             if(!silent) DebugPrintOut("SETUP: Looking For Capture Devices\n");
             IMoniker *pMoniker = NULL;
 
@@ -1369,10 +1402,42 @@ int videoInput::listDevices(bool silent){
                     continue;  // Skip this one, maybe the next one will work.
                 }
 
+				// Find the description or friendly name.
+				cv::CaptureDevice captureDevice;
+				VARIANT varName;
+				VariantInit(&varName);
 
-                 // Find the description or friendly name.
-                VARIANT varName;
-                VariantInit(&varName);
+				hr = pPropBag->Read(L"Description", &varName, 0);
+				if (SUCCEEDED(hr))
+				{
+					captureDevice.description = convertBstrToStr(varName.bstrVal);
+					VariantClear(&varName);
+				}
+
+				hr = pPropBag->Read(L"FriendlyName", &varName, 0);
+				if (SUCCEEDED(hr))
+				{
+					captureDevice.name = convertBstrToStr(varName.bstrVal);
+					VariantClear(&varName);
+				}
+
+				hr = pPropBag->Read(L"DevicePath", &varName, 0);
+				if (SUCCEEDED(hr))
+				{
+					captureDevice.devicePath = convertBstrToStr(varName.bstrVal);
+					VariantClear(&varName);
+				}
+
+				captureDevice.index = deviceCounter + cv::CAP_DSHOW;
+
+				devices.push_back(captureDevice);
+				//if (!silent)
+					DebugPrintOut("SETUP: %i) %s\n",  deviceCounter, captureDevice.name.c_str());
+				//if (!silent) 
+					DebugPrintOut("SETUP: %i) %s\n",  deviceCounter, captureDevice.description.c_str());
+				//if (!silent)
+					DebugPrintOut("SETUP: %i) %s\n\n", deviceCounter, captureDevice.devicePath.c_str());
+
                 hr = pPropBag->Read(L"Description", &varName, 0);
 
                 if (FAILED(hr)) hr = pPropBag->Read(L"FriendlyName", &varName, 0);
@@ -3178,14 +3243,11 @@ videoInput VideoCapture_DShow::g_VI;
 void VideoCapture_DShow::captureDevices(CaptureDevices& devices)
 {
 	CoInitialize(0);
-	int count = g_VI.listDevices(true);
+	videoInput::setVerbose(false);
+	videoInput::listDevices(false);
 
-	for (int idx = 0; idx < count; ++idx)
-	{
-		CaptureDevice device{};
-		device.captureApi = CAP_DSHOW;
-		device.name = String{ g_VI.getDeviceName(idx) };
-		device.index = idx;
+	for (auto device : videoInput::getDevices())
+	{		
 		devices.push_back(std::move(device));
 	}
 	CoUninitialize();
