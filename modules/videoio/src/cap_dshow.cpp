@@ -277,19 +277,13 @@ interface ISampleGrabber : public IUnknown
 	\param bstr
 	\return
 */
-inline cv::String convertBstrToStr(BSTR bstr)
+cv::String convertBstrToStr(BSTR bstr)
 {
-	size_t maxLen = 255 -2;
-	cv::String str;
-	size_t count = 0;
-	while (bstr[count] != 0x00 && count < maxLen) {
-		str += (char)bstr[count];
-		count++;
-	}
-	str += '\0';
-	return str;
+	int bstrLen = SysStringLen(bstr);
+	char buffer[255];
+	size_t len = ::WideCharToMultiByte(CP_ACP, 0, bstr, bstrLen, buffer, 254, NULL, NULL );
+	return cv::String{buffer, len};
 }
-
 
 //Example Usage
 /*
