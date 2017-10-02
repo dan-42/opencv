@@ -62,6 +62,8 @@ namespace cv
 enum { ACCESS_READ=1<<24, ACCESS_WRITE=1<<25,
     ACCESS_RW=3<<24, ACCESS_MASK=ACCESS_RW, ACCESS_FAST=1<<26 };
 
+CV__DEBUG_NS_BEGIN
+
 class CV_EXPORTS _OutputArray;
 
 //////////////////////// Input/Output Array Arguments /////////////////////////////////
@@ -400,6 +402,8 @@ public:
 
 };
 
+CV__DEBUG_NS_END
+
 typedef const _InputArray& InputArray;
 typedef InputArray InputArrayOfArrays;
 typedef const _OutputArray& OutputArray;
@@ -497,7 +501,9 @@ struct CV_EXPORTS UMatData
 {
     enum { COPY_ON_MAP=1, HOST_COPY_OBSOLETE=2,
         DEVICE_COPY_OBSOLETE=4, TEMP_UMAT=8, TEMP_COPIED_UMAT=24,
-        USER_ALLOCATED=32, DEVICE_MEM_MAPPED=64};
+        USER_ALLOCATED=32, DEVICE_MEM_MAPPED=64,
+        ASYNC_CLEANUP=128
+    };
     UMatData(const MatAllocator* allocator);
     ~UMatData();
 
@@ -978,6 +984,12 @@ public:
     destructed.
     */
     template<typename _Tp> explicit Mat(const std::vector<_Tp>& vec, bool copyData=false);
+
+#ifdef CV_CXX11
+    /** @overload
+    */
+    template<typename _Tp> explicit Mat(const std::initializer_list<_Tp> list);
+#endif
 
 #ifdef CV_CXX_STD_ARRAY
     /** @overload
@@ -1460,7 +1472,7 @@ public:
      */
     void release();
 
-    //! deallocates the matrix data
+    //! internal use function, consider to use 'release' method instead; deallocates the matrix data
     void deallocate();
     //! internal use function; properly re-allocates _size, _step arrays
     void copySize(const Mat& m);
@@ -2167,6 +2179,10 @@ public:
     explicit Mat_(const Point_<typename DataType<_Tp>::channel_type>& pt, bool copyData=true);
     explicit Mat_(const Point3_<typename DataType<_Tp>::channel_type>& pt, bool copyData=true);
     explicit Mat_(const MatCommaInitializer_<_Tp>& commaInitializer);
+
+#ifdef CV_CXX11
+    Mat_(std::initializer_list<_Tp> values);
+#endif
 
 #ifdef CV_CXX_STD_ARRAY
     template <std::size_t _Nm> explicit Mat_(const std::array<_Tp, _Nm>& arr, bool copyData=false);
@@ -2967,9 +2983,7 @@ public:
     typedef const uchar** pointer;
     typedef uchar* reference;
 
-#ifndef OPENCV_NOSTL
     typedef std::random_access_iterator_tag iterator_category;
-#endif
 
     //! default constructor
     MatConstIterator();
@@ -3034,9 +3048,7 @@ public:
     typedef const _Tp* pointer;
     typedef const _Tp& reference;
 
-#ifndef OPENCV_NOSTL
     typedef std::random_access_iterator_tag iterator_category;
-#endif
 
     //! default constructor
     MatConstIterator_();
@@ -3087,9 +3099,7 @@ public:
     typedef _Tp* pointer;
     typedef _Tp& reference;
 
-#ifndef OPENCV_NOSTL
     typedef std::random_access_iterator_tag iterator_category;
-#endif
 
     //! the default constructor
     MatIterator_();
@@ -3223,9 +3233,7 @@ template<typename _Tp> class SparseMatConstIterator_ : public SparseMatConstIter
 {
 public:
 
-#ifndef OPENCV_NOSTL
     typedef std::forward_iterator_tag iterator_category;
-#endif
 
     //! the default constructor
     SparseMatConstIterator_();
@@ -3259,9 +3267,7 @@ template<typename _Tp> class SparseMatIterator_ : public SparseMatConstIterator_
 {
 public:
 
-#ifndef OPENCV_NOSTL
     typedef std::forward_iterator_tag iterator_category;
-#endif
 
     //! the default constructor
     SparseMatIterator_();
