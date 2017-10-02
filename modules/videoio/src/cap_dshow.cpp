@@ -3198,7 +3198,6 @@ videoInput VideoCapture_DShow::g_VI;
 void VideoCapture_DShow::captureDevices(CaptureDevices& devices)
 {
   CoInitialize(0);
-  videoInput::setVerbose(false);
   videoInput::listDevices(false);
 
   for (auto device : videoInput::getDevices())
